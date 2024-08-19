@@ -1,0 +1,17 @@
+---
+title: "README"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River
+
+## Anna Haws (ah2355@cornell.edu), John Farrell
+
+## <i> Biological Invasions </i>
+
