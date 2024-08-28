@@ -8,7 +8,7 @@ output: html_document
 # ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River ***
 ## **Anna L. Haws, John M. Farrell**
 
-## **Back-calculated length-at-age analysis from otlith data**
+### *Back-calculated length-at-age analysis from otolith data*
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
