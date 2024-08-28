@@ -1,0 +1,113 @@
+---
+title: "VB_Growth"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+## **Anna L. Haws, John M. Farrell**
+
+### *Von Bertalanffy growth of observed length data*
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(FSA)
+library(nlstools)
+```
+
+```{r, include=FALSE}
+#Load fully processed dataset
+RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+```
+
+
+```{r, include=FALSE}
+# Categorize into 5mm length classes & remove unaged records
+RG %<>% mutate(lcat5=lencat(Total.Length, w=5)) %<>% filter(!is.na(RG$Age))
+
+# Create male and female data frames
+Male<- filter(RG, Sex== "M")
+Female<- filter(RG, Sex=="F")
+
+# Create von Bertalanffy nonlinear function
+vbTyp <- vbFuns("typical")
+```
+
+## Male Von Bertalanffy 
+
+### <i>model fitting</i>
+
+```{r}
+#Starting values via FSA package
+(MVB <- vbStarts(Total.Length~Age,data=Male))
+
+#fit nonlinear equation and create summary table
+fitM<- nls(Total.Length~vbTyp(Age, Linf, K, t0), data=Male, start=MVB)
+bM <- nlsBoot(fitM)
+
+#bootstrap model fitting to get parameter confidence intervals
+(M_param<- cbind(coef(fitM),confint(bM)))
+(M_VBSum<- summary(fitM))
+```
+
+### <i>prediction and plot creation</i>
+
+```{r}
+#Create vector of male age range
+xm<- seq(min(Male$Age), max(Male$Age), length.out=199)
+
+#Apply model to predict length at every value of x
+pm<- vbTyp(xm, Linf=coef(fitM))
+
+#Join length vector and predicted lengths into data frame
+Male_VB<-as.data.frame(cbind(xm,pm))
+
+LCI <- UCI <- numeric(length(xm))
+
+ests<- bM$coefboot
+
+for (i in 1:length(xm)) {
+  pCI_r<-   ests[,"Linf"]*(1-exp(-ests[,"K"]*(xr[i]-ests[,"t0"])))
+LCI[i] <- quantile(pCI_m,0.025)
+UCI[i] <- quantile(pCI_m,0.975)
+}
+
+Male_VB_LCI<-as.data.frame(cbind(xr,LCI))
+Male_VB_UCI<-as.data.frame(cbind(xr,UCI))
+```
+
+
+## Female Von Bertalanffy 
+
+### <i>model fitting</i>
+
+```{r}
+#Starting values via FSA package
+(FVB <- vbStarts(Total.Length~Age,data=Female))
+
+#fit nonlinear equation and create summary table
+fitF<- nls(Total.Length~vbTyp(Age, Linf, K, t0), data=Female, start=FVB)
+(F_VBSum<- summary(fitF))
+
+#bootstrap model fitting to get parameter confidence intervals
+bF <- nlsBoot(fitF)
+(F_param<-cbind(coef(fitF),confint(bF)))
+
+```
+
+### <i>prediction and plot creation</i>
+
+```{r}
+#Create vector of female age range
+xf<- seq(min(Female$Age), max(Female$Age), length.out=199)
+
+#Apply model to predict length at every value of x
+pf<- vbTyp(xf, Linf=coef(fitF))
+
+#Join length vector and predicted lengths into data frame
+Female_VB<-as.data.frame(cbind(xf,pf))
+```

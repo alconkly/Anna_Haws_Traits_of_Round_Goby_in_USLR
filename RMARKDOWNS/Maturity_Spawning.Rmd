@@ -1,0 +1,107 @@
+---
+title: "Maturity_Spawning"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+
+# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+## **Anna L. Haws, John M. Farrell**
+
+### *Maturity analysis*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(FSA)
+library(Rmisc)
+```
+
+```{r}
+#Load fully processed dataset
+RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+
+RG %<>% mutate(LCat=lencat(Total.Length, w=10)) %<>% filter(!is.na(RG$Age))
+
+as.factor(RG$Month)
+spawning<-(c("July", "June", "May"))
+RG_spawn <- RG %>% filter(Month %in% spawning)
+
+RG_spawn$Maturity<- as.factor(RG_spawn$Maturity)
+RG_spawn$Maturity1<-ifelse(RG_spawn$Maturity=="Mature",1,0)
+
+```
+
+# Maturity at length
+
+### Logistic model fitting
+```{r, maturity at length}
+glm_length<- glm(Maturity~Total.Length, data = RG_spawn, family=binomial)
+```
+
+### Compute length-at- 50% and 90% maturity for each site
+
+$$ x = \frac {log (\frac{p}{1-p}) - \alpha} {\beta_1} $$
+
+```{r, echo=FALSE}
+
+lrPerc <- function(cf,p) (log(p/(1-p))-cf[1])/cf[2]
+(L50 <- lrPerc(coef(glm_length),0.5))
+(L90 <- lrPerc(coef(glm_length),0.9))
+``` 
+# Maturity at age
+
+### Logistic model fitting
+```{r, maturity at length}
+glm_age<- glm(Maturity~Age, data = RG_spawn, family=binomial)
+```
+
+### Compute length-at- 50% and 90% maturity for each site
+
+$$ x = \frac {log (\frac{p}{1-p}) - \alpha} {\beta_1} $$
+
+```{r, echo=FALSE}
+
+(A50 <- lrPerc(coef(glm_age),0.5))
+(A90 <- lrPerc(coef(glm_age),0.9))
+``` 
+
+# Summary figures
+```{r}
+(Maturity_length_plot<- ggplot(RG_spawn, aes(x=Total.Length, y=Maturity1)) + geom_point() + labs(title = "a") +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE) + theme_classic ()  + labs(x= "Total length (mm)", y="Probability of maturity")+ theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 15)))
+
+
+(Maturity_length_plot<- ggplot(RG_spawn, aes(x=Age, y=Maturity1)) + geom_point() + labs(title = "b") +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE) + theme_classic ()  + labs(x= "Age", y="Probability of maturity")+ theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 15)))
+```
+
+# Spawning Duration Analysis
+
+### Calculate condition indices
+
+#### $$ GSI = ( Gonad Mass / Total Mass ) * 100 $$
+
+```{r, echo=FALSE}
+#Calculate indices, filter sexes 
+
+RG$Month <- factor(RG$Month , levels=c("May", "June", "July", "August", "September", "October"))
+
+RG<- RG %>% filter(Sex != "I") %>% filter(Month != "June") %>% filter(Month != "September")
+
+RG %<>%  mutate( GSI=(Gonad.Mass/Total.Mass)) %<>% mutate (Sex=factor(Sex))
+
+```
+
+```{r}
+
+(GSI_Summary<-(summarySE(RG, measurevar="GSI", groupvars=c("Sex", "Month"), na.rm = TRUE)))
+
+(GSI_LINE<- ggplot(GSI_Summary, aes(y=GSI*100, x=Month, colour=Sex)) + ylim(0, 10) + geom_errorbar(aes(ymin=(GSI-se)*100, ymax=(GSI+se)*100), width=.1) + geom_point() + geom_line(aes(group=Sex))+ theme_classic () + scale_colour_manual(values=c("black", "grey")) + geom_hline(yintercept=5, linetype="dashed", size=1, color="black")+ geom_hline(yintercept=1, linetype="dashed", size=1, color="grey")  + theme(text = element_text(size = 12), legend.position = "bottom") + ylab("Gonadosomatic Index \n (Gonad Weight/Total Weight \n * 100)") + theme(legend.title=element_blank(), legend.margin=margin(t=-10)))
+
+ggsave("GSI_LINE.tiff", device="tiff", plot=GSI_LINE, path="C:/Users/ah2355/Documents/GitHub/RG_POP_STRUCTURE/Figures/TIFFs", dpi="retina", width = 90, height = 90, units = "mm")
+
+```

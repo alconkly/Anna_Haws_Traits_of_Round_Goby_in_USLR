@@ -1,0 +1,130 @@
+---
+title: "Length_at_Age_BC"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+
+# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River ***
+## **Anna L. Haws, John M. Farrell**
+
+## **Back-calculated length-at-age analysis from otlith data**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(readxl)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(FSA)
+library(ggplot2)
+library(EnvStats)
+library(Matching)
+library(stringr)
+```
+
+
+```{r, include=FALSE}
+#Load fully processed dataset
+RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+```
+
+```{r}
+# Categorize into 5mm length classes & remove unaged records
+RG  %<>% filter(!is.na(RG$Age)) %<>%  filter( Sex!="I")
+
+RG$logTL= log10(RG$Total.Length)
+RG$logOR= log10(RG$OR)
+
+# Create male and female data frames
+Male<- filter(RG, Sex== "M")
+Female<- filter(RG, Sex=="F")
+
+#Convert from onfe-fish-per-line to one-measurement-per-line
+RG_long_M<- Male %>% pivot_longer(cols = c( 'RadAnnu0', 'RadAnnu1', 'RadAnnu2', 'RadAnnu3', 'RadAnnu4', 'RadAnnu5'), names_to = "AgeRad", values_to = "Rad")
+RG_long_M$AgeRad<- str_remove_all(RG_long_M$AgeRad, "[RadAnnu]")
+RG_long_M$AgeRad<- as.numeric(RG_long_M$AgeRad)
+
+RG_long_F<- Female %>% pivot_longer(cols = c( 'RadAnnu0', 'RadAnnu1', 'RadAnnu2', 'RadAnnu3', 'RadAnnu4', 'RadAnnu5'), names_to = "AgeRad", values_to = "Rad")
+RG_long_F$AgeRad<-str_remove_all(RG_long_F$AgeRad, "[RadAnnu]")
+RG_long_F$AgeRad<- as.numeric(RG_long_F$AgeRad)
+```
+
+### Linear regression fitting of otolith radius vs. total length, Summary tables and F tests for equality of slope between sexes
+
+```{r}
+#### Differences between sexes for each site
+BodyOR<- lm(logTL ~ logOR * Sex, data=RG) 
+summary(BodyOR)
+```
+
+#### Male
+
+```{r, echo=FALSE}
+BodyOR_M<- lm(log(Total.Length) ~ log(OR), data=Male) 
+(BodyOR_M_Summary<- coef(BodyOR_M))
+a_M<- coef(BodyOR_M)[2]
+```
+
+#### Female
+```{r, echo=FALSE}
+BodyOR_F<- lm(log(Total.Length) ~ log(OR), data=Female) 
+(BodyOR_F_Summary<- coef(BodyOR_F))
+a_F<- coef(BodyOR_M)[2]
+```
+
+### Plot of otolith radius vs. total length
+
+```{r}
+RG$Sex<- factor(RG$Sex, levels = c("F", "M"), labels= c( "Female","Male"))
+
+(FemaleOR_plot<-ggplot(RG, aes(x=logOR, y=logTL)) + geom_point(aes(color=Sex)) + theme_classic() + scale_color_manual(values=c( "black", "gray")) + labs(x= "Log(Otolith Radius) (mm)", y="Log (Total Length) (mm)")+ theme(legend.position="bottom")+ geom_smooth(method = "lm", aes(group = Sex, color=Sex, linetype=Sex)) + theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 12), legend.position = "bottom") + ylim(1,3) + xlim(0,0.6))
+```
+
+### Back-calculate total lengths at age
+
+$$ TL_{n} = TL * (OR_{n}/OR)^a $$
+TL_{n} is the total length at annulus n; TL, observed total length; OR_{n} otolith radius at annulus n; OR, otolith radius at capture; a, the slope of linear function between logarithm of total length and logarithm of total radius 
+
+#### Male
+```{r, echo=FALSE}
+RG_long_M$Pred_len<- with(RG_long_M, (Total.Length)*(Rad/OR)^a_M)
+
+```
+
+#### Female
+```{r, echo=FALSE}
+RG_long_F$Pred_len<- with(RG_long_F, (Total.Length)*(Rad/OR)^a_F)
+```
+
+### Create summary tables and plots for predicted length-at-age
+
+
+## Males
+```{r, echo=FALSE}
+M_BC_Sum<- Summarize(Pred_len~AgeRad,data=RG_long_M,digits=2)
+M_BC_Sum$Sex<- "Male"
+
+(Male_BC_table = gt(M_BC_Sum[1:5], rowname_col = "AgeRad") %>% cols_hide(columns="n") %>% tab_header(title="Male") %>% cols_label(
+    nvalid = "n",
+    mean = "mean") %>% cols_align(align = "left") %>%
+  tab_stubhead(label = "Age") %>% tab_options(table.width = pct(50))%>% cols_width(everything() ~ px(100)))
+```
+
+
+## Females
+```{r, echo=FALSE}
+F_BC_Sum<- Summarize(Pred_len~AgeRad,data=RG_long_F,digits=2)
+F_BC_Sum$Sex<- "Female"
+
+(Female_BC_table = gt(F_BC_Sum[1:5], rowname_col = "AgeRad") %>% cols_hide(columns="n") %>% tab_header(title="Female") %>% cols_label(
+    nvalid = "n",
+    mean = "mean") %>% cols_align(align = "left") %>%
+  tab_stubhead(label = "Age") %>% tab_options(table.width = pct(50))%>% cols_width(everything() ~ px(100)))
+```
+
+
+```{r}
+
+```
+

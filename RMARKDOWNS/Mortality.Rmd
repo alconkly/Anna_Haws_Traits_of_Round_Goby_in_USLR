@@ -1,0 +1,78 @@
+---
+title: "Mortality"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+
+# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+## **Anna L. Haws, John M. Farrell**
+
+### *Mortality analysis*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Load fully processed dataset
+RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+
+RG %<>% filter(!is.na(RG$Age))
+RG %<>% filter(Sex != "I")
+RG %<>% group_by(Age, Sex)
+
+RGAgeRGCounts_sex<- dplyr:: count(RG$Age, RG$Sex)
+
+RGCounts<- RG %>% count(Age, sort = TRUE)
+```
+
+#### A=Annual mortality
+
+#### S= Annual Survival
+
+#### Z=instantaneous mortality rate
+
+$$\ A+S=1 $$ $$\ A=\frac{C_{t}-C_{t+1}}{C_{t}}=1-\frac{C_{t+1}}{C_{t}}$$ $$\ Z=log(C_{t})-log(C_{t+1})$$ $$\ A=1-e^{-Z} $$
+
+## Linear regression fitting, survival estimate, and statistical comparisons between sexes
+
+```{r, echo=FALSE}
+RGCounts_sex_2<- filter(RGCounts_sex, Age>=3)
+RGCounts_sex_2$lnct<- log(RGCounts_sex_2$n)
+
+lmCC_sex<- lm(Age~lnct*Sex, data=RGCounts_sex_2)
+summary(lmCC_sex)
+anova(lmCC_sex)
+```
+
+
+
+
+## Chapman-Robson Metric estimation and catch curve
+
+Estimates Annual Survival Rate using:
+
+$$\widehat{S}= \frac{T}{n+T-1}=\frac{\overline{T}}{1+\overline{T}-\frac{1}{n}}$$
+
+### All gobies combined
+```{r, echo=FALSE}
+RG_cr <- chapmanRobson(n~Age,data=RGCounts,ages2use=3:5)
+Measure<- c("S", "Z")
+AllRG_CR<-cbind(summary(RG_cr, digits=2), confint(RG_cr, digits=2))
+(AllRG_CR<- data.frame(Measure, AllRG_CR))
+
+
+RG_CC<- catchCurve(n~Age, data=RGCounts, ages2use =3:5, weighted = TRUE)
+plot(RG_CC, pos.est = "bottomleft")
+Measure<- c("Z", "A")
+(RG_CC<- cbind(summary(RG_CC, digits=2), confint(RG_CC, digits=2)))
+(AllRG_CC<- data.frame(Measure, RG_CC))
+AllRG_CC<- AllRG_CC[2,]
+AllRG_CC<- AllRG_CC[-c(4,5)]
+
+(AllRG_Mortality_table<- rbind(AllRG_CR, AllRG_CC))
+
+```
+

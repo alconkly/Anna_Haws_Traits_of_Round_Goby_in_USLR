@@ -1,0 +1,123 @@
+---
+title: "Sex_Length_Age_Freq"
+author: "Anna Haws"
+date: "2024-08-19"
+output: html_document
+---
+
+# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River ***
+## **Anna L. Haws, John M. Farrell**
+
+## **Length and age frequency**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(readxl)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(FSA)
+library(ggplot2)
+library(EnvStats)
+library(Matching)
+```
+
+
+```{r, include=FALSE}
+#Load fully processed dataset
+RG_dissected <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG_dissected_select<- RG_dissected %>% dplyr:: select("Date", "Total.Mass", "Total.Length", "Sex", "Site", "Month", "Year")
+RG_dissected<- filter(RG_dissected, Sex!="I")
+
+RG_notdissected<-read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/NOT_DISSECTED.xlsx") 
+RG_notdissected<- RG_notdissected %>% dplyr:: select("Date", "Total.Mass", "Total.Length", "Sex", "Site", "Month", "Year")
+
+AllRG<- rbind(RG_dissected_select, RG_notdissected)
+AllRG %<>% mutate(lcat5=lencat(Total.Length, w=5))
+
+Male_nd<- filter(AllRG, Sex== "M")
+Female_nd<- filter(AllRG, Sex=="F")
+
+Male_d<- filter(RG_dissected, Sex== "M")
+Female_d<- filter(RG_dissected, Sex=="F")
+```
+
+### *Length frequency analysis*
+
+#### Histogram of round goby length frequencies
+
+```{r, echo=TRUE}
+(Length_Histogram<-ggplot(AllRG, aes(x=Total.Length, fill=Sex)) + geom_histogram(binwidth = 10, color="black") + labs(x = "Total Length (mm)",  y = "Count") + scale_fill_grey() + theme_classic ()+  theme_classic () + theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 12), legend.position = "bottom")+ ylim(0,250)+ xlim(0,250))
+
+```
+
+#### Shapiro-Wilk tests and qqplots to evaluate normality of length distributions for each sex
+
+```{r}
+##Males
+shapiro.test(Male_nd$Total.Length)
+qqPlot(Male_nd$Total.Length)
+
+##Females
+shapiro.test(Female_nd$Total.Length)
+qqPlot(Female_nd$Total.Length)
+```
+
+#### ECDF plot, Kolmogrov-Smirnov test and bootstrapped K-S test to determine whether the ECDF (empirical cumulative distribution function) are the same between two groups and can detect differences in the location (e.g., median), dispersion (e.g., variance), and shape of the distributions. Chi square test to detect differences in length frequencies (5mm classes) between sexes.
+
+```{r}
+clr <- c("black","lightgray")
+plot(ecdf(Female$Total.Length),xlab="Total Length (mm)", ylab = "Fn(x)",
+do.points=FALSE,verticals=TRUE,main="",col.01line=NULL)
+plot(ecdf(Male$Total.Length),add=TRUE,do.points=FALSE,
+verticals=TRUE,col=clr[2],col.01line=NULL)
+legend("bottomright",c("Female","Male"),col=clr,lty=1,
+bty="n",cex=0.75)
+title(main="RG ECDF")
+
+ks.test(Male$Total.Length, Female$Total.Length)
+ks.boot(Male$Total.Length, Female$Total.Length)
+
+RG_xtab<- xtabs(~Sex+lcat5, data=AllRG)
+chisq.test(RG_xtab)
+```
+
+### *Age Frequency Analysis*
+
+#### Hisogram of round goby age frequencies
+
+```{r}
+(Age_Histogram<-ggplot(RG_dissected, aes(x=Age, y=..count.., fill=Sex)) + geom_bar(color="black", position=position_dodge(1, preserve = "single")) + labs(x = "Age",  y = "Count") +  scale_fill_manual(values=c("black", "grey"))+ theme_classic () + xlim(1,5.5) + theme(text = element_text(size = 12), legend.position = "bottom"))
+
+```
+
+#### Shapiro-Wilk tests and qqplots to evaluate normality of age distributions for each sex
+
+```{r}
+##Males
+shapiro.test(Male_d$Age)
+qqPlot(Male_d$Total.Age)
+
+##Females
+shapiro.test(Female_d$Age)
+qqPlot(Female_d$Total.Age)
+```
+
+#### ECDF plot, Kolmogrov-Smirnov test and bootstrapped K-S test to determine whether the ECDF (empirical cumulative distribution function) are the same between two groups and can detect differences in the location (e.g., median), dispersion (e.g., variance), and shape of the distributions. Chi square test to detect differences in age frequencies (year classes) between sexes.
+
+```{r}
+clr <- c("black","lightgray")
+plot(ecdf(Female_d$Age),xlab="Age", ylab = "Fn(x)",
+do.points=FALSE,verticals=TRUE,main="",col.01line=NULL)
+plot(ecdf(Male_d$Age),add=TRUE,do.points=FALSE,
+verticals=TRUE,col=clr[2],col.01line=NULL)
+legend("bottomright",c("Female","Male"),col=clr,lty=1,
+bty="n",cex=0.75)
+title(main="RG ECDF")
+
+ks.test(Male_d$Age, Female_d$Age)
+ks.boot(Male_d$Age, Female_d$Age)
+
+RG_xtab<- xtabs(~Sex+Age, data=RG_dissected)
+chisq.test(RG_xtab)
+```
