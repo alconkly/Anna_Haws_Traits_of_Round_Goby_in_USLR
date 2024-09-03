@@ -1,14 +1,10 @@
 ---
-title: "Length_at_Age_BC"
-author: "Anna Haws"
-date: "2024-08-19"
 output: html_document
 ---
 
-# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River ***
+# ***Aspects of Round Goby Population Ecology in the Upper St. Lawrence River***
 ## **Anna L. Haws, John M. Farrell**
-
-### *Back-calculated length-at-age analysis from otolith data*
+## **Back-calculated length-at-age analysis from otolith data**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
@@ -29,7 +25,7 @@ library(ggpubr)
 
 ```{r, include=FALSE}
 #Load fully processed dataset
-RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG <- read_excel("~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 ```
 
 ```{r}
@@ -92,7 +88,7 @@ F<- as.formula("y~x")
 (ORTL<- ggplot(RG, aes(x=log10(OR), y=log10(Total.Length), color=Sex)) + geom_point(aes(color=Sex)) + theme_classic() + labs(x= "Log(Otolith Radius) (mm)", y="Log (Total Length) (mm)")+ geom_smooth(method = "lm", aes(group = Sex, color=Sex, linetype=Sex), se=FALSE, formula = F)  + scale_color_manual(values=c( "black", "darkgray")) + theme(legend.position = "bottom", text=element_text(size=12)) + theme(legend.position="bottom", legend.margin=margin(-10, 0, 0, 0)) + stat_regline_equation(inherit.aes = TRUE, 
   show.legend = NULL, aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~"))))
  
-ggsave("OR_TL.tiff", device="tiff", plot=ORTL, path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
+ggsave("OR_TL.tiff", device="tiff", plot=ORTL, path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 ```
 
 ### **Back-calculate total lengths at age and create summary tables and plot**
@@ -169,7 +165,7 @@ RG_long<- rbind(RG_long_F, RG_long_M)
     shape = 17, color="red"
    ))
 
-RG_BC_jitter %>% ggsave(filename="BC_jitter.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
+RG_BC_jitter %>% ggsave(filename="BC_jitter.tiff", device = "tiff", path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 
 ```
 

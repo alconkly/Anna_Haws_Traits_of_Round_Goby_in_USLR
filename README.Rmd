@@ -1,7 +1,4 @@
 ---
-title: "README"
-author: "Anna Haws"
-date: "2024-08-19"
 output: html_document
 ---
 
@@ -9,11 +6,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River
+# **Aspects of Round Goby Population Ecology in the Upper St. Lawrence River** 
 
-## Anna Haws (ah2355@cornell.edu), John Farrell
+## **Anna Haws (ah2355@cornell.edu), John Farrell**
 
-## <i> Biological Invasions </i>
+## **README**
+
+## <i> Journal of Great Lakes Research </i>
 
 ### INTRODUCTION
 #### This repository contains the collected dataset and detailed analysis of round goby (<i> Neogobius melanostomus </i>) population data in the upper St. Lawrence River. The paper will be linked upon publication. Please feel free to email the corresponding author with questions.
@@ -27,7 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 - NOT_DISSECTED.xlsx : Basic data for all round gobies not further processed, including date and site of capture, sex, mass (g), and total length (mm).
 
-- DISSECTED.xlsx : All data collected round gobies further processed for age and maturity analyses. Includes a unique specimen identifier, date and site of capture, sex, total length (mm), mass (g), gonad mass (g), liver mass (g), maturity status, age, otolith radius and diameter (mm), annulus increment width and cumulative otolith radius at annulus (mm).
+- DISSECTED.xlsx : All data collected round gobies further processed for age and maturity analyses. Includes a unique specimen identifier, date and site of capture, sex, total length (mm), mass (g), gonad mass (g), liver mass (g), maturity status, age, otolith radius [OR] and diameter [OD] (mm), annulus increment width and cumulative otolith radius at annulus (mm).
 
 
 

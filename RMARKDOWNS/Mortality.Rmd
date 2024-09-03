@@ -1,14 +1,10 @@
 ---
-title: "Mortality"
-author: "Anna Haws"
-date: "2024-08-19"
 output: html_document
 ---
 
-# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+# ***Aspects of Round Goby Population Ecology in the Upper St. Lawrence River***
 ## **Anna L. Haws, John M. Farrell**
-
-### *Mortality analysis*
+## **Mortality Analysis**
 
 ```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -17,20 +13,29 @@ library(magrittr)
 library(plyr)
 library(tidyr)
 library(FSA)
-library(nlstools)
+library(dplyr)
+library(ggplot2)
+library(gt)
+library(ggpubr)
 ```
 
 ```{r}
 # Load fully processed dataset
+RG <- read_excel("~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 
-RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
-
+#Remove unaged and immature data rows
 RG %<>% filter(!is.na(RG$Age))
 RG %<>% filter(Sex != "I")
-RG %<>% group_by(Age, Sex) 
 
+#Create Age only count table
+RG %<>% group_by(Age)
+RGCounts_A<- RG %>% dplyr::count(Age, sort = FALSE)
 
+#Create AGe*Sex count table
+RG %<>% group_by(Age, Sex)
 RGCounts<- RG %>% dplyr::count(Age, Sex, sort = TRUE)
+
+
 ```
 
 #### A=Annual mortality
@@ -43,13 +48,31 @@ $$\ A+S=1 $$ $$\ A=\frac{C_{t}-C_{t+1}}{C_{t}}=1-\frac{C_{t+1}}{C_{t}}$$ $$\ Z=l
 
 ## Linear regression fitting, survival estimate, and statistical comparisons between sexes
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
+#Create df of counts after full recruitment to collection gear
 RGCounts_3<- filter(RGCounts, Age>=3)
-RGCounts_3$lnct<- log(RGCounts_3$n)
+RGCounts_3$lnct<- log(RGCounts_3$n, base = exp(1))
 
-lmCC_sex<- lm(Age~lnct*Sex, data=RGCounts_3)
+#Evaluate difference in slope parameter between sexes
+lmCC_sex<- lm(lnct~Age*Sex, data=RGCounts_3)
 summary(lmCC_sex)
-anova(lmCC_sex)
+
+#Female-only regression
+RGCounts_3_F<- filter(RGCounts_3, Sex=="F")
+lmCC_F<- lm(lnct~Age, data=RGCounts_3_F)
+summary(lmCC_F)
+
+#Male-only regression
+RGCounts_3_M<- filter(RGCounts_3, Sex=="M")
+lmCC_M<- lm(lnct~Age, data=RGCounts_3_M)
+summary(lmCC_M)
+
+#All round gobies combined
+RGCounts_A_3<- filter(RGCounts_A, Age>=3)
+RGCounts_A_3$lnct<- log(RGCounts_A_3$n, base = exp(1))
+
+lmCC_A<- lm(lnct~Age, data=RGCounts_A_3)
+summary(lmCC_A)
 ```
 
 
@@ -62,14 +85,15 @@ Estimates Annual Survival Rate using:
 $$\widehat{S}= \frac{T}{n+T-1}=\frac{\overline{T}}{1+\overline{T}-\frac{1}{n}}$$
 
 ### All gobies combined
-```{r, echo=FALSE}
-RG_cr <- chapmanRobson(n~Age,data=RGCounts,ages2use=3:5)
+```{r, echo=TRUE}
+#Obtain parameter  (S, Z) estimates using Chapman-Robson function from "FSA" Package
+RG_cr <- chapmanRobson(n~Age,data=RGCounts_A,ages2use=3:5)
 Measure<- c("S", "Z")
 AllRG_CR<-cbind(summary(RG_cr, digits=2), confint(RG_cr, digits=2))
 (AllRG_CR<- data.frame(Measure, AllRG_CR))
 
-
-RG_CC<- catchCurve(n~Age, data=RGCounts, ages2use =3:5, weighted = TRUE)
+#Catuch-curve plot
+RG_CC<- catchCurve(n~Age, data=RGCounts_A, ages2use =3:5, weighted = TRUE)
 plot(RG_CC, pos.est = "bottomleft")
 Measure<- c("Z", "A")
 (RG_CC<- cbind(summary(RG_CC, digits=2), confint(RG_CC, digits=2)))
@@ -78,7 +102,6 @@ AllRG_CC<- AllRG_CC[2,]
 AllRG_CC<- AllRG_CC[-c(4,5)]
 
 (AllRG_Mortality_table<- rbind(AllRG_CR, AllRG_CC))
-
 ```
 
 
@@ -87,8 +110,11 @@ AllRG_CC<- AllRG_CC[-c(4,5)]
 
 ```{r, echo=FALSE}
 
-(Mortality_plot<-ggplot(data=RGCounts, aes(x=Age, y=log(n))) + geom_point(aes(colour=Sex)) + ylim(0,5) + stat_smooth( method = lm, se=FALSE, aes(colour=Sex), data = RGCounts_3) + scale_colour_manual(values=c("black", "grey")) + labs(x= "Age", y="Log(Catch [n])")+ theme_classic() + theme( legend.position = "bottom", text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0)) )
+(Mortality_plot<-ggplot(data=RGCounts_3, aes(x=Age, y=log(n), colour=Sex)) + geom_point(data=RGCounts_3, aes(x=Age, y=log(n), colour=Sex)) + ylim(0,5)  + scale_colour_manual(values=c("black", "grey")) + labs(x= "Age", y="Log(Catch [n])")+ theme_classic() + theme( legend.position = "bottom", text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0)) + stat_smooth( method = lm, se=FALSE, aes(colour=Sex), data = RGCounts_3) + stat_regline_equation(inherit.aes = TRUE, 
+  show.legend = NULL,  label.x = c(1,1), label.y = c(0.25,0.75), aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~"))) + geom_point(data=RGCounts, aes(x=Age, y=log(n), colour=Sex)))
 
+```
 
-Mortality_plot %>% ggsave(filename="Mortality_plot.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 90, height = 90, units="mm")
+```{r, echo=FALSE, include=FALSE}
+Mortality_plot %>% ggsave(filename="Mortality_plot.tiff", device = "tiff", path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 90, height = 90, units="mm")
 ```

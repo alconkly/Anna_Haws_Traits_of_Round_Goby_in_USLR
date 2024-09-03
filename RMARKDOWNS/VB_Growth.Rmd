@@ -1,14 +1,10 @@
 ---
-title: "VB_Growth"
-author: "Anna Haws"
-date: "2024-08-19"
 output: html_document
 ---
 
-# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+# ***Aspects of Round Goby Population Ecology in the Upper St. Lawrence River***
 ## **Anna L. Haws, John M. Farrell**
-
-### *Von Bertalanffy growth of observed length data*
+### **Von Bertalanffy growth of observed length data**
 
 ```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -23,9 +19,8 @@ library(ggplot2)
 
 ```{r, include=FALSE}
 #Load fully processed dataset
-RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG <- read_excel("~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 ```
-
 
 ```{r, include=FALSE}
 # Categorize into 5mm length classes & remove unaged records
@@ -39,7 +34,7 @@ Female<- filter(RG, Sex=="F")
 vbTyp <- vbFuns("typical")
 ```
 
-## Male Von Bertalanffy 
+### *Male Von Bertalanffy* 
 
 ### <i>model fitting</i>
 
@@ -57,8 +52,6 @@ bM <- nlsBoot(fitM)
 ```
 
 ### <i>prediction and plot creation</i>
-
-#### Male
 
 ```{r}
 #Create vector of male age range
@@ -84,7 +77,7 @@ MVB_LCI<-as.data.frame(cbind(xm,LCI))
 MVB_UCI<-as.data.frame(cbind(xm,UCI))
 ```
 
-#### Female
+### *Female Von Bertalanffy* 
 
 ### <i>model fitting</i>
 
@@ -137,6 +130,6 @@ RG<- filter(RG, Sex!="I")
  + geom_line(data=Female_VB, aes(x=xf, y=pf), color="black") + geom_line(data=FVB_LCI, aes(x=xf, y=LCI), colour=I("black"), linetype = "dashed") + geom_line(data=FVB_UCI, aes(x=xf, y=UCI), colour=I("black"), linetype = "dashed")   
 + labs(x = "Age",  y = "Total Length (mm)") + ylim(50,230)  + theme_classic () + theme(legend.position="bottom", text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0))) 
 
-VBPlot %>% ggsave(filename="VBPlot.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
+VBPlot %>% ggsave(filename="VBPlot.tiff", device = "tiff", path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 
 ```

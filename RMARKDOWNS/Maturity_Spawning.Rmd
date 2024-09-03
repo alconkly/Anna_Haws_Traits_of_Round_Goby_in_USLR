@@ -1,14 +1,10 @@
 ---
-title: "Maturity_Spawning"
-author: "Anna Haws"
-date: "2024-08-19"
 output: html_document
 ---
 
-# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River***
+# ***Aspects of Round Goby Population Ecology in the Upper St. Lawrence River***
 ## **Anna L. Haws, John M. Farrell**
-
-### *Maturity analysis*
+## **Maturity analysis**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -18,24 +14,26 @@ library(dplyr)
 library(tidyr)
 library(FSA)
 library(Rmisc)
+library(ggplot2)
+library(ggpubr)
 ```
 
 ```{r}
 #Load fully processed dataset
-RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG <- read_excel("~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 
 RG %<>% mutate(LCat=lencat(Total.Length, w=10)) %<>% filter(!is.na(RG$Age))
 
-as.factor(RG$Month)
+RG$Month %<>% as.factor()
 spawning<-(c("July", "June", "May"))
 RG_spawn <- RG %>% filter(Month %in% spawning)
 
-RG_spawn$Maturity<- as.factor(RG_spawn$Maturity)
+RG_spawn$Maturity %<>% as.factor()
 RG_spawn$Maturity1<-ifelse(RG_spawn$Maturity=="Mature",1,0)
 
 ```
 
-# Maturity at length
+## *Maturity at length*
 
 ### Logistic model fitting
 ```{r, maturity at length}
@@ -52,14 +50,16 @@ lrPerc <- function(cf,p) (log(p/(1-p))-cf[1])/cf[2]
 (L50 <- lrPerc(coef(glm_length),0.5))
 (L90 <- lrPerc(coef(glm_length),0.9))
 ``` 
-# Maturity at age
+
+## *Maturity at age*
 
 ### Logistic model fitting
-```{r, maturity at length}
+
+```{r, maturity at age}
 glm_age<- glm(Maturity~Age, data = RG_spawn, family=binomial)
 ```
 
-### Compute length-at- 50% and 90% maturity for each site
+### Compute length-at- 50% and 90% maturity
 
 $$ x = \frac {log (\frac{p}{1-p}) - \alpha} {\beta_1} $$
 
@@ -69,7 +69,7 @@ $$ x = \frac {log (\frac{p}{1-p}) - \alpha} {\beta_1} $$
 (A90 <- lrPerc(coef(glm_age),0.9))
 ``` 
 
-# Summary figures
+### Summary figures
 ```{r}
 #Maturity at length
 (Maturity_length_plot<- ggplot(RG_spawn, aes(x=Total.Length, y=Maturity1)) + 
@@ -82,13 +82,13 @@ $$ x = \frac {log (\frac{p}{1-p}) - \alpha} {\beta_1} $$
 
 (Maturity_Plot<- ggarrange(Maturity_age_plot, Maturity_length_plot + rremove("ylab")))
 
-Maturity_Plot %>% ggsave(filename="Maturity_Plot.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
+Maturity_Plot %>% ggsave(filename="Maturity_Plot.tiff", device = "tiff", path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 
 ```
 
-# Spawning Duration Analysis
+## *Spawning Duration Analysis*
 
-### Calculate condition indices
+### Calculate GSI
 
 #### $$ GSI = ( Gonad Mass / Total Mass ) * 100 $$
 
@@ -109,6 +109,6 @@ RG %<>%  mutate( GSI=(Gonad.Mass/Total.Mass)) %<>% mutate (Sex=factor(Sex))
 
 (GSI_LINE<- ggplot(GSI_Summary, aes(y=GSI*100, x=Month, colour=Sex)) + ylim(0, 10) + geom_errorbar(aes(ymin=(GSI-se)*100, ymax=(GSI+se)*100), width=.1) + geom_point() + geom_line(aes(group=Sex))+ theme_classic () + scale_colour_manual(values=c("black", "grey")) + geom_hline(yintercept=5, linetype="dashed", size=1, color="black")+ geom_hline(yintercept=1, linetype="dashed", size=1, color="grey")  + theme(text = element_text(size = 12), legend.position = "bottom") + ylab("Gonadosomatic Index \n (Gonad Weight/Total Weight \n * 100)") + theme(legend.title=element_blank(), legend.margin=margin(t=-10)))
 
-ggsave("GSI_LINE.tiff", device="tiff", plot=GSI_LINE, path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 90, height = 90, units = "mm")
+ggsave("GSI_LINE.tiff", device="tiff", plot=GSI_LINE, path="~/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Figures/TIFFs", dpi="retina", width = 90, height = 90, units = "mm")
 
 ```
