@@ -21,12 +21,15 @@ library(ggplot2)
 library(EnvStats)
 library(Matching)
 library(stringr)
+library(gtExtras)
+library(gt)
+library(ggpubr)
 ```
 
 
 ```{r, include=FALSE}
 #Load fully processed dataset
-RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 ```
 
 ```{r}
@@ -50,46 +53,58 @@ RG_long_F$AgeRad<-str_remove_all(RG_long_F$AgeRad, "[RadAnnu]")
 RG_long_F$AgeRad<- as.numeric(RG_long_F$AgeRad)
 ```
 
-### Linear regression fitting of otolith radius vs. total length, Summary tables and F tests for equality of slope between sexes
+### **Linear regression fitting of otolith radius vs. total length, F-tests for equality of slope between sexes, create summary plot**
+
+### Fit linear regressions
+
+#### All data combined, F-test for effect of sex on slope parameter
 
 ```{r}
 #### Differences between sexes for each site
-BodyOR<- lm(logTL ~ logOR * Sex, data=RG) 
+BodyOR<- lm(log10(Total.Length) ~ log10(OR) * Sex, data=RG) 
 summary(BodyOR)
 ```
 
-#### Male
+
+#### Fit regression for males
 
 ```{r, echo=FALSE}
-BodyOR_M<- lm(log(Total.Length) ~ log(OR), data=Male) 
-(BodyOR_M_Summary<- coef(BodyOR_M))
+(BodyOR_M<- lm(log10(Total.Length) ~ log10(OR), data=Male))
+BodyOR_M_Summary<- coef(BodyOR_M)
 a_M<- coef(BodyOR_M)[2]
 ```
 
-#### Female
+#### Fit regression for females
+
 ```{r, echo=FALSE}
-BodyOR_F<- lm(log(Total.Length) ~ log(OR), data=Female) 
-(BodyOR_F_Summary<- coef(BodyOR_F))
+summary(BodyOR_F<- lm(log10(Total.Length) ~ log10(OR), data=Female) )
+BodyOR_F_Summary<- coef(BodyOR_F)
 a_F<- coef(BodyOR_M)[2]
 ```
 
-### Plot of otolith radius vs. total length
+#### Plot otolith radius vs. total length
 
 ```{r}
-RG$Sex<- factor(RG$Sex, levels = c("F", "M"), labels= c( "Female","Male"))
+RG$Sex<- factor(RG$Sex, levels = c("F","M" ), labels= c("Female", "Male"))
 
-(FemaleOR_plot<-ggplot(RG, aes(x=logOR, y=logTL)) + geom_point(aes(color=Sex)) + theme_classic() + scale_color_manual(values=c( "black", "gray")) + labs(x= "Log(Otolith Radius) (mm)", y="Log (Total Length) (mm)")+ theme(legend.position="bottom")+ geom_smooth(method = "lm", aes(group = Sex, color=Sex, linetype=Sex)) + theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 12), legend.position = "bottom") + ylim(1,3) + xlim(0,0.6))
+F<- as.formula("y~x")
+
+(ORTL<- ggplot(RG, aes(x=log10(OR), y=log10(Total.Length), color=Sex)) + geom_point(aes(color=Sex)) + theme_classic() + labs(x= "Log(Otolith Radius) (mm)", y="Log (Total Length) (mm)")+ geom_smooth(method = "lm", aes(group = Sex, color=Sex, linetype=Sex), se=FALSE, formula = F)  + scale_color_manual(values=c( "black", "darkgray")) + theme(legend.position = "bottom", text=element_text(size=12)) + theme(legend.position="bottom", legend.margin=margin(-10, 0, 0, 0)) + stat_regline_equation(inherit.aes = TRUE, 
+  show.legend = NULL, aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~"))))
+ 
+ggsave("OR_TL.tiff", device="tiff", plot=ORTL, path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 ```
 
-### Back-calculate total lengths at age
+### **Back-calculate total lengths at age and create summary tables and plot**
 
 $$ TL_{n} = TL * (OR_{n}/OR)^a $$
 TL_{n} is the total length at annulus n; TL, observed total length; OR_{n} otolith radius at annulus n; OR, otolith radius at capture; a, the slope of linear function between logarithm of total length and logarithm of total radius 
 
+### Calculate predicted length and each annulus
+
 #### Male
 ```{r, echo=FALSE}
 RG_long_M$Pred_len<- with(RG_long_M, (Total.Length)*(Rad/OR)^a_M)
-
 ```
 
 #### Female
@@ -97,15 +112,21 @@ RG_long_M$Pred_len<- with(RG_long_M, (Total.Length)*(Rad/OR)^a_M)
 RG_long_F$Pred_len<- with(RG_long_F, (Total.Length)*(Rad/OR)^a_F)
 ```
 
-### Create summary tables and plots for predicted length-at-age
 
+### Create summary tables and plots for predicted length-at-age and test for differences in back-calculated length-at-age between sexes
 
-## Males
+#### Males
 ```{r, echo=FALSE}
+#Calculate statistics
 M_BC_Sum<- Summarize(Pred_len~AgeRad,data=RG_long_M,digits=2)
 M_BC_Sum$Sex<- "Male"
+M_BC_Sum %<>% relocate(Sex, .after = mean)
+M_BC_Sum$se<-M_BC_Sum$sd/sqrt(M_BC_Sum$n) 
+M_BC_Sum$se %<>% round(digits = 2)
+M_BC_Sum %<>% relocate(se, .after = mean)
 
-(Male_BC_table = gt(M_BC_Sum[1:5], rowname_col = "AgeRad") %>% cols_hide(columns="n") %>% tab_header(title="Male") %>% cols_label(
+#Create table
+(Male_BC_table =  gt(M_BC_Sum[1:6], rowname_col = "AgeRad", groupname_col="Sex") %>% cols_hide(columns="n") %>% tab_header(title="Male") %>% cols_label(
     nvalid = "n",
     mean = "mean") %>% cols_align(align = "left") %>%
   tab_stubhead(label = "Age") %>% tab_options(table.width = pct(50))%>% cols_width(everything() ~ px(100)))
@@ -114,17 +135,41 @@ M_BC_Sum$Sex<- "Male"
 
 ## Females
 ```{r, echo=FALSE}
+#Calculate statistics
 F_BC_Sum<- Summarize(Pred_len~AgeRad,data=RG_long_F,digits=2)
-F_BC_Sum$Sex<- "Female"
+F_BC_Sum$Sex<-"Female"
+F_BC_Sum %<>% relocate(Sex, .after = mean)
+F_BC_Sum$se<-F_BC_Sum$sd/sqrt(F_BC_Sum$n) 
+F_BC_Sum$se %<>% round(digits = 2)
+F_BC_Sum %<>% relocate(se, .after = mean)
 
-(Female_BC_table = gt(F_BC_Sum[1:5], rowname_col = "AgeRad") %>% cols_hide(columns="n") %>% tab_header(title="Female") %>% cols_label(
+#Create table
+(Female_BC_table =  gt(F_BC_Sum[1:6], rowname_col = "AgeRad", groupname_col="Sex") %>% cols_hide(columns="n") %>% tab_header(title="Female") %>% cols_label(
     nvalid = "n",
     mean = "mean") %>% cols_align(align = "left") %>%
   tab_stubhead(label = "Age") %>% tab_options(table.width = pct(50))%>% cols_width(everything() ~ px(100)))
 ```
 
-
+## Scatterplot of back-calculated length at-age and mean predicted length
 ```{r}
+RG_long<- rbind(RG_long_F, RG_long_M)
+
+(RG_BC_jitter<- ggplot(RG_long, aes(AgeRad, Pred_len)) + geom_jitter(aes(shape=Sex, color=Sex)) +  facet_wrap(vars(Age)) + ylim (0,300) + xlim(0,5) + ylab ("Back-Calculated Length (mm)") + xlab ("Age (Jittered)") + theme_classic () + scale_color_manual(values=c( "black", "darkgray")) + theme(legend.position="bottom",text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0)) +
+  stat_summary(data= RG_long_F,
+    geom = "point",
+    fun.y = "mean",
+    size = 2,
+    shape = 16,
+    color="red"
+  ) +
+  stat_summary(data= RG_long_M,
+    geom = "point",
+    fun.y = "mean",
+    size =2,
+    shape = 17, color="red"
+   ))
+
+RG_BC_jitter %>% ggsave(filename="BC_jitter.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
 
 ```
 

@@ -5,7 +5,7 @@ date: "2024-08-19"
 output: html_document
 ---
 
-# ***Fast Life-Pace and Enhanced Body Size: Traits of an Established, Freshwater Round Goby Population in the Upper St. Lawrence River ***
+# ***Aspects of Round Goby Population Ecology in the Upper St. Lawrence River***
 ## **Anna L. Haws, John M. Farrell**
 
 ## **Length and age frequency**
@@ -20,16 +20,17 @@ library(FSA)
 library(ggplot2)
 library(EnvStats)
 library(Matching)
+library(RColorBrewer)
 ```
 
 
 ```{r, include=FALSE}
 #Load fully processed dataset
-RG_dissected <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG_dissected <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 RG_dissected_select<- RG_dissected %>% dplyr:: select("Date", "Total.Mass", "Total.Length", "Sex", "Site", "Month", "Year")
 RG_dissected<- filter(RG_dissected, Sex!="I")
 
-RG_notdissected<-read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/NOT_DISSECTED.xlsx") 
+RG_notdissected<-read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/NOT_DISSECTED.xlsx") 
 RG_notdissected<- RG_notdissected %>% dplyr:: select("Date", "Total.Mass", "Total.Length", "Sex", "Site", "Month", "Year")
 
 AllRG<- rbind(RG_dissected_select, RG_notdissected)
@@ -40,6 +41,7 @@ Female_nd<- filter(AllRG, Sex=="F")
 
 Male_d<- filter(RG_dissected, Sex== "M")
 Female_d<- filter(RG_dissected, Sex=="F")
+
 ```
 
 ### *Length frequency analysis*
@@ -47,7 +49,12 @@ Female_d<- filter(RG_dissected, Sex=="F")
 #### Histogram of round goby length frequencies
 
 ```{r, echo=TRUE}
-(Length_Histogram<-ggplot(AllRG, aes(x=Total.Length, fill=Sex)) + geom_histogram(binwidth = 10, color="black") + labs(x = "Total Length (mm)",  y = "Count") + scale_fill_grey() + theme_classic ()+  theme_classic () + theme(plot.margin = margin(t=0.1, l=0.1, r=0.1, b=0.1, unit = "cm"), text = element_text(size = 12), legend.position = "bottom")+ ylim(0,250)+ xlim(0,250))
+
+AllRG$Sex <- factor(AllRG$Sex, levels=c('M', 'I', 'F'))
+
+(CombinedHist<- ggplot(AllRG, aes(x=Total.Length, fill=Sex)) + geom_histogram(binwidth = 10, color="black") + labs(x = "Total Length (mm)",  y = "Count")  + theme_classic ()+ ylim(0,350) + theme(legend.position="bottom") + theme( legend.position = "bottom",text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0))+ scale_fill_manual(breaks=c('F', 'I', 'M'), values = c("grey20", "grey60", "lightgrey")))
+
+ggsave("Length_Histogram.tiff", device="tiff", plot=CombinedHist, path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 90, height = 90, units="mm")
 
 ```
 
@@ -67,16 +74,16 @@ qqPlot(Female_nd$Total.Length)
 
 ```{r}
 clr <- c("black","lightgray")
-plot(ecdf(Female$Total.Length),xlab="Total Length (mm)", ylab = "Fn(x)",
+plot(ecdf(Female_nd$Total.Length),xlab="Total Length (mm)", ylab = "Fn(x)",
 do.points=FALSE,verticals=TRUE,main="",col.01line=NULL)
-plot(ecdf(Male$Total.Length),add=TRUE,do.points=FALSE,
+plot(ecdf(Male_nd$Total.Length),add=TRUE,do.points=FALSE,
 verticals=TRUE,col=clr[2],col.01line=NULL)
 legend("bottomright",c("Female","Male"),col=clr,lty=1,
 bty="n",cex=0.75)
 title(main="RG ECDF")
 
-ks.test(Male$Total.Length, Female$Total.Length)
-ks.boot(Male$Total.Length, Female$Total.Length)
+ks.test(Male_nd$Total.Length, Female_nd$Total.Length)
+ks.boot(Male_nd$Total.Length, Female_nd$Total.Length)
 
 RG_xtab<- xtabs(~Sex+lcat5, data=AllRG)
 chisq.test(RG_xtab)
@@ -87,8 +94,9 @@ chisq.test(RG_xtab)
 #### Hisogram of round goby age frequencies
 
 ```{r}
-(Age_Histogram<-ggplot(RG_dissected, aes(x=Age, y=..count.., fill=Sex)) + geom_bar(color="black", position=position_dodge(1, preserve = "single")) + labs(x = "Age",  y = "Count") +  scale_fill_manual(values=c("black", "grey"))+ theme_classic () + xlim(1,5.5) + theme(text = element_text(size = 12), legend.position = "bottom"))
+(Age_Histogram<-ggplot(RG_dissected, aes(x=Age, y=..count.., fill=Sex)) + geom_bar(color="black", position=position_dodge(1, preserve = "single")) + labs(x = "Age",  y = "Count") +  scale_fill_manual(values=c("black", "grey"))+ theme_classic () + xlim(0.5,5.5) + theme(legend.position="bottom") + theme( legend.position = "bottom",text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0)))
 
+ggsave("Age_Histogram.tiff", device="tiff", plot=Age_Histogram, path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 90, height = 90, units="mm")
 ```
 
 #### Shapiro-Wilk tests and qqplots to evaluate normality of age distributions for each sex
@@ -96,11 +104,11 @@ chisq.test(RG_xtab)
 ```{r}
 ##Males
 shapiro.test(Male_d$Age)
-qqPlot(Male_d$Total.Age)
+qqPlot(Male_d$Age)
 
 ##Females
 shapiro.test(Female_d$Age)
-qqPlot(Female_d$Total.Age)
+qqPlot(Female_d$Age)
 ```
 
 #### ECDF plot, Kolmogrov-Smirnov test and bootstrapped K-S test to determine whether the ECDF (empirical cumulative distribution function) are the same between two groups and can detect differences in the location (e.g., median), dispersion (e.g., variance), and shape of the distributions. Chi square test to detect differences in age frequencies (year classes) between sexes.

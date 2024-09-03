@@ -18,11 +18,12 @@ library(dplyr)
 library(tidyr)
 library(FSA)
 library(nlstools)
+library(ggplot2)
 ```
 
 ```{r, include=FALSE}
 #Load fully processed dataset
-RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 ```
 
 
@@ -57,6 +58,8 @@ bM <- nlsBoot(fitM)
 
 ### <i>prediction and plot creation</i>
 
+#### Male
+
 ```{r}
 #Create vector of male age range
 xm<- seq(min(Male$Age), max(Male$Age), length.out=199)
@@ -72,17 +75,16 @@ LCI <- UCI <- numeric(length(xm))
 ests<- bM$coefboot
 
 for (i in 1:length(xm)) {
-  pCI_r<-   ests[,"Linf"]*(1-exp(-ests[,"K"]*(xr[i]-ests[,"t0"])))
+  pCI_m<-   ests[,"Linf"]*(1-exp(-ests[,"K"]*(xm[i]-ests[,"t0"])))
 LCI[i] <- quantile(pCI_m,0.025)
 UCI[i] <- quantile(pCI_m,0.975)
 }
 
-Male_VB_LCI<-as.data.frame(cbind(xr,LCI))
-Male_VB_UCI<-as.data.frame(cbind(xr,UCI))
+MVB_LCI<-as.data.frame(cbind(xm,LCI))
+MVB_UCI<-as.data.frame(cbind(xm,UCI))
 ```
 
-
-## Female Von Bertalanffy 
+#### Female
 
 ### <i>model fitting</i>
 
@@ -111,4 +113,30 @@ pf<- vbTyp(xf, Linf=coef(fitF))
 
 #Join length vector and predicted lengths into data frame
 Female_VB<-as.data.frame(cbind(xf,pf))
+
+LCI <- UCI <- numeric(length(xf))
+
+ests<- bF$coefboot
+
+for (i in 1:length(xf)) {
+  pCI_f<-   ests[,"Linf"]*(1-exp(-ests[,"K"]*(xf[i]-ests[,"t0"])))
+LCI[i] <- quantile(pCI_f,0.025)
+UCI[i] <- quantile(pCI_f,0.975)
+}
+
+FVB_LCI<-as.data.frame(cbind(xf,LCI))
+FVB_UCI<-as.data.frame(cbind(xf,UCI))
+```
+
+
+```{r}
+RG<- filter(RG, Sex!="I")
+
+(VBPlot<- ggplot()+
+   geom_point(data=RG, aes(x=Age, y=Total.Length, color=Sex)) + scale_color_manual(values = c("F" = "black", "M" = "grey")) + geom_line(data=Male_VB, aes(x=xm, y=pm), color="darkgrey") + geom_line(data=MVB_LCI, aes(x=xm, y=LCI), colour=I("darkgrey"), linetype = "dashed") + geom_line(data=MVB_UCI, aes(x=xm, y=UCI), colour=("darkgrey"), linetype = "dashed") 
+ + geom_line(data=Female_VB, aes(x=xf, y=pf), color="black") + geom_line(data=FVB_LCI, aes(x=xf, y=LCI), colour=I("black"), linetype = "dashed") + geom_line(data=FVB_UCI, aes(x=xf, y=UCI), colour=I("black"), linetype = "dashed")   
++ labs(x = "Age",  y = "Total Length (mm)") + ylim(50,230)  + theme_classic () + theme(legend.position="bottom", text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0))) 
+
+VBPlot %>% ggsave(filename="VBPlot.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 190, height = 100, units="mm")
+
 ```

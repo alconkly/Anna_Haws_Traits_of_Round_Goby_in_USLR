@@ -10,22 +10,27 @@ output: html_document
 
 ### *Mortality analysis*
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(magrittr)
+library(plyr)
+library(tidyr)
+library(FSA)
+library(nlstools)
 ```
 
-
 ```{r}
-#Load fully processed dataset
-RG <- read_excel("C:/Users/ah2355/Documents/GitHub/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
+# Load fully processed dataset
+
+RG <- read_excel("G:/Dissertation/Chapter 4- VHSV demographic/Anna_Haws_Traits_of_Round_Goby_in_USLR/Data/DISSECTED.xlsx") 
 
 RG %<>% filter(!is.na(RG$Age))
 RG %<>% filter(Sex != "I")
-RG %<>% group_by(Age, Sex)
+RG %<>% group_by(Age, Sex) 
 
-RGAgeRGCounts_sex<- dplyr:: count(RG$Age, RG$Sex)
 
-RGCounts<- RG %>% count(Age, sort = TRUE)
+RGCounts<- RG %>% dplyr::count(Age, Sex, sort = TRUE)
 ```
 
 #### A=Annual mortality
@@ -39,10 +44,10 @@ $$\ A+S=1 $$ $$\ A=\frac{C_{t}-C_{t+1}}{C_{t}}=1-\frac{C_{t+1}}{C_{t}}$$ $$\ Z=l
 ## Linear regression fitting, survival estimate, and statistical comparisons between sexes
 
 ```{r, echo=FALSE}
-RGCounts_sex_2<- filter(RGCounts_sex, Age>=3)
-RGCounts_sex_2$lnct<- log(RGCounts_sex_2$n)
+RGCounts_3<- filter(RGCounts, Age>=3)
+RGCounts_3$lnct<- log(RGCounts_3$n)
 
-lmCC_sex<- lm(Age~lnct*Sex, data=RGCounts_sex_2)
+lmCC_sex<- lm(Age~lnct*Sex, data=RGCounts_3)
 summary(lmCC_sex)
 anova(lmCC_sex)
 ```
@@ -76,3 +81,14 @@ AllRG_CC<- AllRG_CC[-c(4,5)]
 
 ```
 
+
+
+#### Plot
+
+```{r, echo=FALSE}
+
+(Mortality_plot<-ggplot(data=RGCounts, aes(x=Age, y=log(n))) + geom_point(aes(colour=Sex)) + ylim(0,5) + stat_smooth( method = lm, se=FALSE, aes(colour=Sex), data = RGCounts_3) + scale_colour_manual(values=c("black", "grey")) + labs(x= "Age", y="Log(Catch [n])")+ theme_classic() + theme( legend.position = "bottom", text=element_text(size=12), legend.margin=margin(-10, 0, 0, 0)) )
+
+
+Mortality_plot %>% ggsave(filename="Mortality_plot.tiff", device = "tiff", path="G:/POP_STRUCTURE_PUB/Figures/Resized_TIFFs", dpi="retina", width = 90, height = 90, units="mm")
+```
